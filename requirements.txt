@@ -1,0 +1,12 @@
+# --- core ---
+streamlit>=1.36
+SQLAlchemy>=2.0
+pydantic>=2.7
+
+# --- search ---
+rapidfuzz>=3.9          # fuzzy name matching (handles "sharam" -> "Sharma")
+python-dateutil>=2.9    # parsing "since Monday", "last week", etc.
+
+# --- testing ---
+pytest>=8.2
+pytest-cov>=5.0
