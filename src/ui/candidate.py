@@ -7,6 +7,7 @@ Shows:
 - full immutable history (rendered from stage_events)
 - per-stage durations
 - action buttons (Advance / Reject)
+- notes panel (append-only)
 - a "back" button
 """
 
@@ -31,6 +32,7 @@ from src.pipeline import (
     reject,
     stage_durations,
 )
+from src.ui import notes
 
 
 # ---------- helpers ----------
@@ -150,7 +152,7 @@ def _history_section(session: Session, candidate: Candidate) -> None:
         st.caption("_No events yet._")
         return
 
-    for evt in reversed(events):  # newest first
+    for evt in reversed(events):
         with st.container(border=True):
             c1, c2 = st.columns([1, 5])
             with c1:
@@ -179,7 +181,7 @@ def _durations_section(session: Session, candidate: Candidate) -> None:
         col1.markdown(f"**{label}**")
         col2.markdown(f"{days:.1f} days" + (" _(ongoing)_" if ongoing else ""))
         with col3:
-            st.progress(min(days / 30.0, 1.0))  # cap bar at 30 days
+            st.progress(min(days / 30.0, 1.0))
 
 
 # ---------- main entry ----------
@@ -210,3 +212,6 @@ def render(session: Session, candidate_id: int, on_back) -> None:
         _history_section(session, candidate)
     with right:
         _durations_section(session, candidate)
+
+    st.divider()
+    notes.render(session, scope=f"candidate:{candidate.id}", title="📝 Notes")

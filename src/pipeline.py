@@ -12,8 +12,8 @@ Invariants enforced:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from datetime import datetime, timezone
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -130,7 +130,7 @@ def add_candidate(
         status=CandidateStatus.ACTIVE,
     )
     session.add(candidate)
-    session.flush()  # get id
+    session.flush()
 
     _record(
         session,
@@ -259,7 +259,7 @@ def stage_durations(session: Session, candidate_id: int) -> list[dict]:
 
     for i, evt in enumerate(events):
         if evt.to_stage is None:
-            continue  # rejection event closes previous stage, no new stage entered
+            continue
         entered = _aware(evt.timestamp)
         if i + 1 < len(events):
             left = _aware(events[i + 1].timestamp)
@@ -277,3 +277,46 @@ def stage_durations(session: Session, candidate_id: int) -> list[dict]:
             }
         )
     return durations
+
+
+# ---------- notes ----------
+
+def add_note(
+    session: Session,
+    scope: str,
+    text: str,
+    *,
+    author: str | None = None,
+):
+    """Append a scoped note. Append-only."""
+    from src.models import Note
+
+    scope = (scope or "").strip()
+    text = (text or "").strip()
+    if not scope:
+        raise PipelineError("Note scope is required.")
+    if not text:
+        raise PipelineError("Note text cannot be empty.")
+
+    note = Note(
+        scope=scope,
+        text=text,
+        author=(author or "").strip() or None,
+    )
+    session.add(note)
+    session.commit()
+    session.refresh(note)
+    return note
+
+
+def list_notes(session: Session, scope: str) -> list:
+    """Return notes for a scope, newest first."""
+    from src.models import Note
+
+    return list(
+        session.scalars(
+            select(Note)
+            .where(Note.scope == scope)
+            .order_by(Note.created_at.desc(), Note.id.desc())
+        )
+    )

@@ -21,6 +21,7 @@ from src.models import (
 )
 from src.pipeline import PipelineError, advance, reject
 from src.search.executor import SearchHit
+from src.ui import notes
 
 
 # ---------- helpers ----------
@@ -40,7 +41,6 @@ def _card(
         st.markdown(f"**{candidate.name}**")
         st.caption(candidate.email)
 
-        # stage + status badges
         badge = f"`{candidate.current_stage.value}`"
         if candidate.status == CandidateStatus.REJECTED:
             badge += "  🔴 rejected"
@@ -55,7 +55,6 @@ def _card(
                 for r in reasons:
                     st.markdown(f"- {r}")
 
-        # actions
         c1, c2, c3 = st.columns(3)
 
         with c1:
@@ -85,7 +84,6 @@ def _card(
 
 
 def _do(session: Session, fn, candidate_id: int) -> None:
-    """Run a pipeline action; surface errors as toasts."""
     try:
         fn(session, candidate_id)
         st.toast("Updated.", icon="✅")
@@ -97,6 +95,10 @@ def _do(session: Session, fn, candidate_id: int) -> None:
 # ---------- full board ----------
 
 def _render_full(session: Session) -> None:
+    # Board-level notes at the very top
+    notes.render(session, scope="board", title="📝 Board notes")
+    st.divider()
+
     st.subheader("Pipeline")
 
     cols = st.columns(len(STAGE_ORDER))
@@ -119,7 +121,6 @@ def _render_full(session: Session) -> None:
             for c in candidates:
                 _card(session, c)
 
-    # rejected pile (collapsed)
     rejected = (
         session.query(Candidate)
         .filter(Candidate.status == CandidateStatus.REJECTED)
@@ -142,7 +143,6 @@ def _render_hits(session: Session, hits: list[SearchHit]) -> None:
     if not hits:
         return
 
-    # group by stage for readability
     grouped: dict[Stage, list[SearchHit]] = {s: [] for s in STAGE_ORDER}
     rejected_hits: list[SearchHit] = []
 
@@ -180,7 +180,7 @@ def render(
 ) -> None:
     """
     candidates=None → full board
-    candidates=[]   → searched, zero results (caller already showed message)
+    candidates=[]   → searched, zero results
     candidates=[..] → filtered results
     """
     if candidates is None:
