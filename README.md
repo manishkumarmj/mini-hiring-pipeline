@@ -1,3 +1,6 @@
+https://minihiring.streamlit.app/
+
+
 # Mini Hiring Pipeline
 
 A small web app that helps a recruiter run candidates through a single hiring pipeline and find who she needs with one search box.
