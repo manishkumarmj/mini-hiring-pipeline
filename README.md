@@ -66,3 +66,6 @@ python seed.py --reset
 
 # 5. Run the app
 streamlit run app.py
+
+
+
