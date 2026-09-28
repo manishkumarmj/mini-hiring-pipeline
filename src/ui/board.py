@@ -101,16 +101,14 @@ def _render_full(session: Session) -> None:
 
     cols = st.columns(len(STAGE_ORDER))
     for col, stage in zip(cols, STAGE_ORDER):
-        # fetch candidates at this stage (non-rejected at this stage only)
-        candidates = (
-            session.query(Candidate)
-            .filter(
-                Candidate.current_stage == stage,
-                Candidate.status == CandidateStatus.ACTIVE,
-            )
-            .order_by(Candidate.stage_entered_at.asc())
-            .all()
-        )
+        q = session.query(Candidate).filter(Candidate.current_stage == stage)
+
+        if stage == Stage.HIRED:
+            q = q.filter(Candidate.status == CandidateStatus.HIRED)
+        else:
+            q = q.filter(Candidate.status == CandidateStatus.ACTIVE)
+
+        candidates = q.order_by(Candidate.stage_entered_at.asc()).all()
 
         with col:
             st.markdown(f"### {stage.value}")

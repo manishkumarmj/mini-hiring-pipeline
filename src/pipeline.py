@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -252,12 +252,17 @@ def stage_durations(session: Session, candidate_id: int) -> list[dict]:
     durations: list[dict] = []
     now = utcnow()
 
+    def _aware(dt: datetime) -> datetime:
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt
+
     for i, evt in enumerate(events):
         if evt.to_stage is None:
             continue  # rejection event closes previous stage, no new stage entered
-        entered = evt.timestamp
+        entered = _aware(evt.timestamp)
         if i + 1 < len(events):
-            left = events[i + 1].timestamp
+            left = _aware(events[i + 1].timestamp)
             ongoing = False
         else:
             left = now

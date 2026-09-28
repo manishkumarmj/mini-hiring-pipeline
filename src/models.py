@@ -82,10 +82,12 @@ class Candidate(Base):
         index=True,
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
     stage_entered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
-    )  # used for "stuck for N days"
+    )
 
     # relationship (ordered oldest → newest)
     events: Mapped[list["StageEvent"]] = relationship(
@@ -100,7 +102,10 @@ class Candidate(Base):
 
     @property
     def days_in_stage(self) -> float:
-        delta = utcnow() - self.stage_entered_at
+        entered = self.stage_entered_at
+        if entered.tzinfo is None:
+            entered = entered.replace(tzinfo=timezone.utc)
+        delta = utcnow() - entered
         return delta.total_seconds() / 86400.0
 
     @property
@@ -108,7 +113,10 @@ class Candidate(Base):
         return self.status in (CandidateStatus.REJECTED, CandidateStatus.HIRED)
 
     def __repr__(self) -> str:
-        return f"<Candidate {self.id} {self.name!r} stage={self.current_stage.value} status={self.status.value}>"
+        return (
+            f"<Candidate {self.id} {self.name!r} "
+            f"stage={self.current_stage.value} status={self.status.value}>"
+        )
 
 
 class StageEvent(Base):

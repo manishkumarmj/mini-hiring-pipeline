@@ -10,6 +10,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.db import init_db, get_session
+from src.pipeline import PipelineError, add_candidate
 from src.ui import board, candidate, searchbar
 
 st.set_page_config(
@@ -19,7 +20,7 @@ st.set_page_config(
 )
 
 # --- bootstrap ---
-init_db()  # creates tables if they don't exist
+init_db()
 
 if "selected_candidate_id" not in st.session_state:
     st.session_state.selected_candidate_id = None
@@ -41,6 +42,26 @@ with st.sidebar:
         _reset_selection()
 
     st.divider()
+
+    # ---- ADD CANDIDATE FORM ----
+    with st.expander("➕ Add candidate", expanded=False):
+        with st.form("add_candidate_form", clear_on_submit=True):
+            new_name = st.text_input("Name", placeholder="Priya Sharma")
+            new_email = st.text_input("Email", placeholder="priya@example.com")
+            submitted = st.form_submit_button("Add", use_container_width=True)
+
+            if submitted:
+                s = get_session()
+                try:
+                    c = add_candidate(s, name=new_name, email=new_email)
+                    st.success(f"Added {c.name} at {c.current_stage.value}")
+                    st.rerun()
+                except PipelineError as e:
+                    st.error(str(e))
+                finally:
+                    s.close()
+
+    st.divider()
     st.caption("Stages: Applied → Screening → Interview → Offer → Hired")
     st.caption("Rejection possible at any pre-Hire stage.")
 
@@ -50,23 +71,18 @@ session = get_session()
 
 try:
     if st.session_state.selected_candidate_id is not None:
-        # Candidate detail view (history + stage actions)
         candidate.render(
             session,
             candidate_id=st.session_state.selected_candidate_id,
             on_back=_reset_selection,
         )
     else:
-        # Search bar always visible at top
         query_result = searchbar.render(session)
-
         st.divider()
 
         if query_result is not None:
-            # Search returned a filtered result set
             board.render(session, candidates=query_result)
         else:
-            # Default: full board grouped by stage
             board.render(session)
 finally:
     session.close()
