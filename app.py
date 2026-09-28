@@ -46,18 +46,6 @@ with st.sidebar:
     if st.button("🏠 Pipeline board", use_container_width=True):
         _set_filter(None)
 
-    st.divider()
-    st.markdown("**Views**")
-
-    for stage in Stage:
-        if st.button(stage.value, use_container_width=True, key=f"nav_{stage.value}"):
-            _set_filter(stage)
-
-    if st.button("🔴 Rejected", use_container_width=True, key="nav_rejected"):
-        _set_filter("rejected")
-
-    st.divider()
-
     with st.expander("➕ Add candidate", expanded=False):
         with st.form("add_candidate_form", clear_on_submit=True):
             new_name = st.text_input("Name", placeholder="Priya Sharma")
@@ -74,6 +62,16 @@ with st.sidebar:
                     st.error(str(e))
                 finally:
                     s.close()
+
+    st.divider()
+    st.markdown("**Views**")
+
+    for stage in Stage:
+        if st.button(stage.value, use_container_width=True, key=f"nav_{stage.value}"):
+            _set_filter(stage)
+
+    if st.button("🔴 Rejected", use_container_width=True, key="nav_rejected"):
+        _set_filter("rejected")
 
 
 # ---------- helper: row of clickable tabs ----------
